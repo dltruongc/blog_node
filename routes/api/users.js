@@ -2,7 +2,7 @@ const express = require("express");
 const { check, validationResult } = require("express-validator");
 const User = require("../../models/User");
 const gravatar = require("gravatar");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../../config/default.json");
 
@@ -35,7 +35,9 @@ router.post(
       let user = await User.findOne({ email });
 
       if (user) {
-        res.status(400).json({ errors: [{ msg: "User already exists" }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: "User already exists" }] });
       }
 
       // Get users gravatar
@@ -46,8 +48,15 @@ router.post(
       });
 
       // Encrypt password
-      const salt = bcrypt.genSalt(10);
+      const salt = await bcrypt.genSalt(10);
+
       const hashPassword = await bcrypt.hash(password, salt);
+      user = new User({
+        name,
+        email,
+        avatar,
+        password: hashPassword,
+      });
 
       await user.save();
 
@@ -67,12 +76,12 @@ router.post(
             throw err;
           }
 
-          res.status(400).json({ token });
+          return res.status(400).json({ token });
         }
       );
     } catch (err) {
       console.log(err.message);
-      res.status(500).send("Server error");
+      return res.status(500).send("Server error");
     }
   }
 );
