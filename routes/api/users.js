@@ -10,7 +10,7 @@ const router = express.Router();
 
 /*
  * @route   POST api/users
- * @desc    Test route
+ * @desc    Create new user
  * @access  Public
  */
 router.post(
