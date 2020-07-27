@@ -11,7 +11,7 @@ const router = express.Router();
 
 /*
  * @route   GET api/auth
- * @desc    Test route
+ * @desc    Get current user info
  * @access  Public
  */
 router.get("/", auth, async (req, res) => {
@@ -26,7 +26,7 @@ router.get("/", auth, async (req, res) => {
 
 /*
  * @route   POST api/auth
- * @desc    Test route
+ * @desc    Login user
  * @access  Public
  */
 router.post(
