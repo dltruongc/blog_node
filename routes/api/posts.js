@@ -58,6 +58,25 @@ router.get("/", auth, async (req, res) => {
 });
 
 /**
+ * @route   GET api/posts/:post_id
+ * @desc    Get post by id
+ * @access  public
+ */
+router.get("/:post_id", async (req, res, next) => {
+    try {
+        return res.json(await Post.findById(req.params.post_id));
+    } catch (err) {
+        console.error(err.message);
+
+        if (err.kind === "ObjectId") {
+            return res.status(400).send("Post not found");
+        }
+
+        return res.status(500).send("Server error");
+    }
+});
+
+/**
  * @route DELETE api/posts
  * @description Delete a post
  * @access private
