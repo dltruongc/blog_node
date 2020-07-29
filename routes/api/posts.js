@@ -150,13 +150,34 @@ router.put("/unlike/:post_id", auth, async (req, res, next) => {
                 .json({ errors: [{ msg: "You don't like this post" }] });
         }
 
-        post.likes.splice(
-            post.likes.find((like) => like.user.toString() === req.user.id),
-            1
-        );
+        const removeIndex = post.likes
+            .map((like) => like.user.toString())
+            .indexOf(req.user.id);
+
+        if (removeIndex !== -1) {
+            post.likes.splice(removeIndex, 1);
+        }
 
         await post.save();
         return res.json(post.likes);
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).send("Server error");
+    }
+});
+
+/**
+ * @route GET api/posts/comment/:post_id/:comment_id
+ * @description Get a comment
+ * @access private
+ */
+router.get("/comment/:post_id/:comment_id", async (req, res, next) => {
+    try {
+        const post = await Post.findById(req.params.post_id);
+        const cmt = post.comments.find(
+            (cmt) => cmt.id.toString() === req.params.comment_id
+        );
+        return res.json(cmt);
     } catch (err) {
         console.error(err.message);
         return res.status(500).send("Server error");
@@ -234,12 +255,13 @@ router.delete("/comment/:post_id/:comment_id", auth, async (req, res, next) => {
             });
         }
 
-        post.comments.splice(
-            post.comments.find(
-                (cmt) => cmt.id.toString() === req.params.comment_id
-            ),
-            1
-        );
+        const removeIndex = post.comments
+            .map((cmt) => cmt.user.toString())
+            .indexOf(req.user.id);
+
+        if (removeIndex !== -1) {
+            post.comments.splice(removeIndex, 1);
+        }
 
         await post.save();
         return res.json(post.comments);
