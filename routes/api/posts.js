@@ -163,4 +163,90 @@ router.put("/unlike/:post_id", auth, async (req, res, next) => {
     }
 });
 
+/**
+ * @route POST api/posts/comment
+ * @description Post a new comment to post
+ * @access private
+ */
+router.post(
+    "/comment/:post_id",
+    [auth, [check("text", "Comment content is required").not().isEmpty()]],
+    async (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const post = await Post.findById(req.params.post_id);
+
+            if (!post) {
+                return res
+                    .status(400)
+                    .json({ errors: [{ msg: "Post not found" }] });
+            }
+
+            const user = await User.findById(req.user.id).select("-password");
+            const newCmt = {
+                user: req.user.id,
+                name: user.name,
+                avatar: user.avatar,
+                text: req.body.text,
+            };
+
+            post.comments.unshift(newCmt);
+            await post.save();
+
+            return res.json(post);
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send("Server error");
+        }
+    }
+);
+
+/**
+ * @route DELETE api/posts/comment/:post_id/:comment_id
+ * @description Delete a comment from post
+ * @access private
+ */
+router.delete("/comment/:post_id/:comment_id", auth, async (req, res, next) => {
+    try {
+        const post = await Post.findById(req.params.post_id);
+
+        if (!post) {
+            return res
+                .status(400)
+                .json({ errors: [{ msg: "Post not found" }] });
+        }
+
+        comment = post.comments.find(
+            (cmt) => cmt.id.toString() === req.params.comment_id
+        );
+
+        if (!comment) {
+            return res.status(400).json({ msg: "Comment not found" });
+        }
+
+        if (comment.user.toString() !== req.user.id) {
+            return res.status(401).json({
+                msg: "Unauthorized! Permission denied.",
+            });
+        }
+
+        post.comments.splice(
+            post.comments.find(
+                (cmt) => cmt.id.toString() === req.params.comment_id
+            ),
+            1
+        );
+
+        await post.save();
+        return res.json(post.comments);
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).send("Server error");
+    }
+});
+
 module.exports = router;
