@@ -1,9 +1,11 @@
 const express = require("express");
+const { check, validationResult } = require("express-validator");
+const request = require("request");
 
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
 const auth = require("../../middleware/auth");
-const { check, validationResult } = require("express-validator");
+const config = require("../../config/default.json");
 
 const router = express.Router();
 
@@ -344,4 +346,38 @@ router.delete("/education/:edu_id", auth, async (req, res, next) => {
     }
 });
 
+/**
+ * @route api/profile/github/:github_username
+ * @description Get Github profile by Github username
+ * @access public
+ */
+router.get("/github/:github_username", async (req, res, next) => {
+    try {
+        const options = {
+            uri:
+                `https://api.github.com/users/${req.params.github_username}` +
+                `/repos?per_page=5&sort=created:asc` +
+                `&client_id=${config.githubClientId}` +
+                `&client_secret=${config.githubClientSecret}`,
+            method: "GET",
+            headers: { "user-agent": "node.js" },
+        };
+
+        request(options.uri, options, (err, response, body) => {
+            if (err) {
+                console.error(err.message);
+                return res.status(500).send("Server error");
+            }
+
+            if (response.statusCode !== 200) {
+                return res.status(400).json({ msg: "No github profile found" });
+            }
+
+            return res.json(JSON.parse(body));
+        });
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).send("Server error");
+    }
+});
 module.exports = router;
